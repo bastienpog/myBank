@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.vite/
+coverage/
+.env*
+!.env.production
+*.log
+*.tsbuildinfo
+.git/
+.vscode/
+.idea/
+.DS_Store
+Dockerfile
+nginx.conf
+.dockerignore

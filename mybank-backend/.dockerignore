@@ -1,0 +1,13 @@
+vendor/
+var/
+.git/
+.env
+.env.local
+.env.*.local
+tests/
+*.md
+.vscode/
+.idea/
+.DS_Store
+Dockerfile
+.dockerignore
