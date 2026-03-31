@@ -1,18 +1,25 @@
-import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vitest/config";
+import { defineConfig } from "vite";
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react()],
   server: {
-    host: "0.0.0.0", // ← this line is required for Docker
+    host: "0.0.0.0",
     port: 5173,
     strictPort: true,
-  },
-  test: {
-    environment: "jsdom",
-    globals: true,
-    setupFiles: ["./src/setupTests.ts"],
+    watch: {
+      usePolling: true,
+    },
+    hmr: {
+      clientPort: 5173,
+    },
+    proxy: {
+      "/api": {
+        target: process.env.VITE_API_TARGET ?? "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 });
