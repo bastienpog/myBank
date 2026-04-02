@@ -1,116 +1,63 @@
-# compose.yaml
-# Dev by default — override with compose.prod.yaml for production
-# Usage:
-#   dev  → docker compose up --build --watch
-#   prod → docker compose -f compose.yaml -f compose.prod.yaml up -d --build
-
 services:
-  # ─── MySQL 8.4 ────────────────────────────────────────────────────────────────
-  db:
-    image: mysql:8.4
-    container_name: app_db
-    restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: ${MYSQL_DB:-app}
-      MYSQL_USER: ${MYSQL_USER:-app}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - backend_net
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "mysqladmin",
-          "ping",
-          "-h",
-          "localhost",
-          "-u",
-          "${MYSQL_USER:-app}",
-          "-p${MYSQL_PASSWORD}",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-  # ─── Symfony / FrankenPHP ─────────────────────────────────────────────────────
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      target: ${APP_ENV:-dev} # build "dev" or "prod" stage
-    container_name: app_backend
-    restart: unless-stopped
-    environment:
-      APP_ENV: ${APP_ENV:-dev}
-      APP_SECRET: ${APP_SECRET:?APP_SECRET is required}
-      DATABASE_URL: mysql://${MYSQL_USER:-app}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DB:-app}?serverVersion=8.4&charset=utf8mb4
-      CORS_ALLOW_ORIGIN: ${CORS_ALLOW_ORIGIN:-^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$}
-      # FrankenPHP / Caddy
-      SERVER_NAME: ${SERVER_NAME:-:80}
-    ports:
-      - "${BACKEND_PORT:-8080}:80"
-    volumes:
-      # Dev: live-reload by mounting sources; excluded in prod target
-      - ./backend:/app:cached
-      - backend_vendor:/app/vendor # keep vendor inside the container
-      # Caddy needs write access to store PKI certs and runtime config
-      - caddy_data:/data
-      - caddy_config:/config
-    networks:
-      - backend_net
-      - app_net
-    depends_on:
-      db:
-        condition: service_healthy
-    healthcheck:
-      # TODO: replace with /api/health once your Symfony endpoint exists
-      # See README for the minimal controller to add
-      test: ["CMD", "curl", "-f", "http://localhost:80"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
-
-  # ─── Vite + React (dev server OR nginx static) ────────────────────────────────
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
-      target: ${FRONTEND_TARGET:-dev} # "dev" (Vite HMR) or "prod" (nginx)
-    container_name: app_frontend
-    restart: unless-stopped
-    environment:
-      VITE_API_URL: ${VITE_API_URL:-http://localhost:${BACKEND_PORT:-8080}}
     ports:
-      - "${FRONTEND_PORT:-5173}:5173"
+      - "5173:5173"
     volumes:
-      # Dev only: hot-module reload from host sources
-      - ./frontend:/app:cached
-      - frontend_node_modules:/app/node_modules
-    networks:
-      - app_net
+      - ./frontend:/app
+      - /app/node_modules
     depends_on:
       - backend
+    networks:
+      - mybank-net
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      DATABASE_URL: "mysql://mybank:secret@db:3306/mybank"
+      APP_ENV: dev
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/var/www/html
+    networks:
+      - mybank-net
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: mybank
+      MYSQL_USER: mybank
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: rootsecret
+    volumes:
+      - db-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:5173"]
-      interval: 30s
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 10s
-      retries: 3
-      start_period: 15s
+      retries: 5
+    networks:
+      - mybank-net
 
-# ─── Volumes ──────────────────────────────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./backend:/var/www/html:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - mybank-net
+
 volumes:
-  mysql_data:
-  backend_vendor:
-  caddy_data:
-  caddy_config:
-  frontend_node_modules:
+  db-data:
 
-# ─── Networks ─────────────────────────────────────────────────────────────────
 networks:
-  backend_net: # db ↔ backend only
-  app_net: # backend ↔ frontend
+  mybank-net:
+    driver: bridge

@@ -1,0 +1,101 @@
+name: CI MyBank
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      # ÉTAPE 1 : Récupérer le code source
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      # ÉTAPE 2 : Installer Node.js avec mise en cache
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      # ÉTAPE 3 : Installer les dépendances (npm ci est plus rapide et fiable en CI)
+      - name: Installation dépendances frontend
+        run: npm ci
+
+      # ÉTAPE 4 : Vérifier la qualité du code (Lint)
+      # On le place souvent avant le build pour échouer plus vite si le code est "sale"
+      - name: Lint ESLint
+        run: npm run lint
+
+      # ÉTAPE 5 : Exécuter les tests
+      - name: Tests Vitest
+        run: npm run test -- --watch=false --reporter=verbose
+
+      # ÉTAPE 6 : Vérifier la compilation React
+      - name: Build React
+        run: npm run build
+
+  backend-tests:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: mybank_test
+          MYSQL_USER: mybank
+          MYSQL_PASSWORD: secret
+          MYSQL_ROOT_PASSWORD: rootsecret
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: pdo, pdo_mysql, intl, mbstring, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+        working-directory: backend
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+        working-directory: backend
+
+      - name: Prepare database and migrations
+        run: |
+          php bin/console doctrine:database:create --env=test --if-not-exists
+          php bin/console doctrine:migrations:migrate --env=test --no-interaction
+        working-directory: backend
+        env:
+          DATABASE_URL: "mysql://mybank:secret@127.0.0.1:3306/mybank_test"
+
+      - name: Run PHPUnit tests
+        run: php bin/phpunit
+        working-directory: backend
+        env:
+          APP_ENV: test
+          DATABASE_URL: "mysql://mybank:secret@127.0.0.1:3306/mybank_test"
