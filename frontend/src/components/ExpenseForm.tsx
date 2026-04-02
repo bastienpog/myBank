@@ -1,6 +1,20 @@
 import { useState } from "react";
+import type { CSSProperties, FocusEvent } from "react";
+import type { Expense } from "./ExpenseList";
 
-const CATEGORIES = [
+interface ExpenseFormProps {
+  onAdd?: (expense: Expense) => void;
+}
+
+type Category =
+  | "Housing"
+  | "Food"
+  | "Transport"
+  | "Health"
+  | "Leisure"
+  | "Other";
+
+const CATEGORIES: Category[] = [
   "Housing",
   "Food",
   "Transport",
@@ -9,12 +23,12 @@ const CATEGORIES = [
   "Other",
 ];
 
-const inputStyle = {
+const inputStyle: CSSProperties = {
   width: "100%",
   padding: "10px 14px",
   border: "1.5px solid #E5E7EB",
-  borderRadius: "10px",
-  fontSize: "14px",
+  borderRadius: 10,
+  fontSize: 14,
   fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
   color: "#111827",
   backgroundColor: "#FAFAFA",
@@ -23,27 +37,33 @@ const inputStyle = {
   transition: "border-color 0.15s",
 };
 
-const labelStyle = {
+const labelStyle: CSSProperties = {
   display: "block",
-  fontSize: "12px",
+  fontSize: 12,
   fontWeight: 600,
   color: "#374151",
-  marginBottom: "5px",
+  marginBottom: 5,
   letterSpacing: "0.04em",
   textTransform: "uppercase",
 };
 
-export default function ExpenseForm({ onAdd }) {
-  const [label, setLabel] = useState("");
-  const [amount, setAmount] = useState("");
-  const [date, setDate] = useState("");
-  const [category, setCategory] = useState("Other");
+function focusOn(e: FocusEvent<HTMLInputElement | HTMLSelectElement>) {
+  e.target.style.borderColor = "#6366F1";
+}
+function focusOff(e: FocusEvent<HTMLInputElement | HTMLSelectElement>) {
+  e.target.style.borderColor = "#E5E7EB";
+}
 
-  function handleSubmit(e) {
-    e.preventDefault();
+export default function ExpenseForm({ onAdd }: ExpenseFormProps) {
+  const [label, setLabel] = useState<string>("");
+  const [amount, setAmount] = useState<string>("");
+  const [date, setDate] = useState<string>("");
+  const [category, setCategory] = useState<Category>("Other");
+
+  function handleSubmit(): void {
     if (!label || !amount) return;
 
-    const newExpense = {
+    const newExpense: Expense = {
       id: Date.now(),
       label,
       amount: parseFloat(amount),
@@ -64,25 +84,20 @@ export default function ExpenseForm({ onAdd }) {
         fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
         backgroundColor: "#fff",
         border: "1.5px solid #E5E7EB",
-        borderRadius: "16px",
-        padding: "24px",
+        borderRadius: 16,
+        padding: 24,
         display: "flex",
         flexDirection: "column",
-        gap: "16px",
+        gap: 16,
       }}
     >
       <h2
-        style={{
-          margin: 0,
-          fontSize: "17px",
-          fontWeight: 700,
-          color: "#111827",
-        }}
+        style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "#111827" }}
       >
         New Expense
       </h2>
 
-      {/* Label field */}
+      {/* Label */}
       <div>
         <label htmlFor="expense-label" style={labelStyle}>
           Label
@@ -94,12 +109,12 @@ export default function ExpenseForm({ onAdd }) {
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           style={inputStyle}
-          onFocus={(e) => (e.target.style.borderColor = "#6366F1")}
-          onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+          onFocus={focusOn}
+          onBlur={focusOff}
         />
       </div>
 
-      {/* Amount field — label text matches /amount/i */}
+      {/* Amount — label text matches /amount/i */}
       <div>
         <label htmlFor="expense-amount" style={labelStyle}>
           Amount
@@ -108,18 +123,18 @@ export default function ExpenseForm({ onAdd }) {
           id="expense-amount"
           type="number"
           placeholder="0.00"
-          min="0"
-          step="0.01"
+          min={0}
+          step={0.01}
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           style={inputStyle}
-          onFocus={(e) => (e.target.style.borderColor = "#6366F1")}
-          onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+          onFocus={focusOn}
+          onBlur={focusOff}
         />
       </div>
 
-      {/* Date + Category row */}
-      <div style={{ display: "flex", gap: "12px" }}>
+      {/* Date + Category */}
+      <div style={{ display: "flex", gap: 12 }}>
         <div style={{ flex: 1 }}>
           <label htmlFor="expense-date" style={labelStyle}>
             Date
@@ -130,8 +145,8 @@ export default function ExpenseForm({ onAdd }) {
             value={date}
             onChange={(e) => setDate(e.target.value)}
             style={inputStyle}
-            onFocus={(e) => (e.target.style.borderColor = "#6366F1")}
-            onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+            onFocus={focusOn}
+            onBlur={focusOff}
           />
         </div>
         <div style={{ flex: 1 }}>
@@ -141,10 +156,10 @@ export default function ExpenseForm({ onAdd }) {
           <select
             id="expense-category"
             value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            onChange={(e) => setCategory(e.target.value as Category)}
             style={{ ...inputStyle, cursor: "pointer" }}
-            onFocus={(e) => (e.target.style.borderColor = "#6366F1")}
-            onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+            onFocus={focusOn}
+            onBlur={focusOff}
           >
             {CATEGORIES.map((cat) => (
               <option key={cat} value={cat}>
@@ -155,17 +170,17 @@ export default function ExpenseForm({ onAdd }) {
         </div>
       </div>
 
-      {/* Submit button — name matches /add/i */}
+      {/* Submit — name matches /add/i */}
       <button
         type="button"
         onClick={handleSubmit}
         style={{
-          padding: "12px",
-          borderRadius: "10px",
+          padding: 12,
+          borderRadius: 10,
           border: "none",
           backgroundColor: "#4F46E5",
           color: "#fff",
-          fontSize: "14px",
+          fontSize: 14,
           fontWeight: 700,
           cursor: "pointer",
           letterSpacing: "0.03em",

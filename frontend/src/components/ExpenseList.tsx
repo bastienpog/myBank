@@ -1,4 +1,27 @@
-const categoryColors = {
+export interface Expense {
+  id: number;
+  label: string;
+  amount: number;
+  date: string;
+  category: string;
+}
+
+interface ExpenseListProps {
+  expenses: Expense[];
+}
+
+type CategoryKey =
+  | "Housing"
+  | "Food"
+  | "Transport"
+  | "Health"
+  | "Leisure"
+  | "Other";
+
+const categoryColors: Record<
+  CategoryKey,
+  { bg: string; text: string; dot: string }
+> = {
   Housing: { bg: "#EEF2FF", text: "#4338CA", dot: "#6366F1" },
   Food: { bg: "#FEF9C3", text: "#854D0E", dot: "#EAB308" },
   Transport: { bg: "#DCFCE7", text: "#166534", dot: "#22C55E" },
@@ -7,17 +30,21 @@ const categoryColors = {
   Other: { bg: "#F3F4F6", text: "#374151", dot: "#9CA3AF" },
 };
 
-function CategoryBadge({ category }) {
-  const colors = categoryColors[category] || categoryColors.Other;
+function getCategoryColors(category: string) {
+  return categoryColors[category as CategoryKey] ?? categoryColors.Other;
+}
+
+function CategoryBadge({ category }: { category: string }) {
+  const colors = getCategoryColors(category);
   return (
     <span
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: "5px",
+        gap: 5,
         padding: "2px 10px",
-        borderRadius: "999px",
-        fontSize: "11px",
+        borderRadius: 999,
+        fontSize: 11,
         fontWeight: 600,
         letterSpacing: "0.04em",
         backgroundColor: colors.bg,
@@ -38,7 +65,7 @@ function CategoryBadge({ category }) {
   );
 }
 
-export default function ExpenseList({ expenses = [] }) {
+export default function ExpenseList({ expenses = [] }: ExpenseListProps) {
   if (expenses.length === 0) {
     return (
       <div
@@ -51,8 +78,8 @@ export default function ExpenseList({ expenses = [] }) {
           padding: "56px 24px",
           color: "#9CA3AF",
           border: "2px dashed #E5E7EB",
-          borderRadius: "16px",
-          gap: "10px",
+          borderRadius: 16,
+          gap: 10,
         }}
       >
         <svg
@@ -69,12 +96,10 @@ export default function ExpenseList({ expenses = [] }) {
             strokeLinejoin="round"
           />
         </svg>
-        <p style={{ margin: 0, fontSize: "15px", fontWeight: 500 }}>
+        <p style={{ margin: 0, fontSize: 15, fontWeight: 500 }}>
           No expenses yet
         </p>
-        <p style={{ margin: 0, fontSize: "13px" }}>
-          Add your first expense above
-        </p>
+        <p style={{ margin: 0, fontSize: 13 }}>Add your first expense above</p>
       </div>
     );
   }
@@ -83,25 +108,23 @@ export default function ExpenseList({ expenses = [] }) {
 
   return (
     <div style={{ fontFamily: "'DM Sans', 'Segoe UI', sans-serif" }}>
-      {/* Summary bar */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "12px",
+          marginBottom: 12,
           padding: "0 2px",
         }}
       >
-        <span style={{ fontSize: "13px", color: "#6B7280", fontWeight: 500 }}>
+        <span style={{ fontSize: 13, color: "#6B7280", fontWeight: 500 }}>
           {expenses.length} expense{expenses.length !== 1 ? "s" : ""}
         </span>
-        <span style={{ fontSize: "15px", color: "#111827", fontWeight: 700 }}>
+        <span style={{ fontSize: 15, color: "#111827", fontWeight: 700 }}>
           Total: {total.toLocaleString("fr-FR")} €
         </span>
       </div>
 
-      {/* List */}
       <ul
         style={{
           listStyle: "none",
@@ -109,7 +132,7 @@ export default function ExpenseList({ expenses = [] }) {
           padding: 0,
           display: "flex",
           flexDirection: "column",
-          gap: "8px",
+          gap: 8,
         }}
       >
         {expenses.map((expense) => (
@@ -120,7 +143,7 @@ export default function ExpenseList({ expenses = [] }) {
               alignItems: "center",
               justifyContent: "space-between",
               padding: "14px 18px",
-              borderRadius: "12px",
+              borderRadius: 12,
               backgroundColor: "#FAFAFA",
               border: "1px solid #F3F4F6",
               transition: "box-shadow 0.15s",
@@ -130,19 +153,13 @@ export default function ExpenseList({ expenses = [] }) {
             }
             onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
           >
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "4px" }}
-            >
-              <span
-                style={{ fontSize: "15px", fontWeight: 600, color: "#111827" }}
-              >
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <span style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>
                 {expense.label}
               </span>
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "8px" }}
-              >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <CategoryBadge category={expense.category} />
-                <span style={{ fontSize: "12px", color: "#9CA3AF" }}>
+                <span style={{ fontSize: 12, color: "#9CA3AF" }}>
                   {new Date(expense.date).toLocaleDateString("fr-FR", {
                     day: "numeric",
                     month: "short",
@@ -153,7 +170,7 @@ export default function ExpenseList({ expenses = [] }) {
             </div>
             <span
               style={{
-                fontSize: "17px",
+                fontSize: 17,
                 fontWeight: 700,
                 color: "#1D4ED8",
                 whiteSpace: "nowrap",
