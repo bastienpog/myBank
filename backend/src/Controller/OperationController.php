@@ -86,8 +86,12 @@ class OperationController extends AbstractController
         $user = $this->getUser();
         $operation = $repo->find($id);
 
-        if (!$operation || $operation->getUser() !== $user) {
+        if (!$operation) {
             return new JsonResponse(['error' => 'Opération non trouvée'], 404);
+        }
+
+        if ($operation->getUser() !== $user) {
+            return new JsonResponse(['error' => 'Accès refusé'], 403);
         }
 
         $data = json_decode($request->getContent(), true);
@@ -125,8 +129,12 @@ class OperationController extends AbstractController
         $user = $this->getUser();
         $operation = $repo->find($id);
 
-        if (!$operation || $operation->getUser() !== $user) {
+        if (!$operation) {
             return new JsonResponse(['error' => 'Opération non trouvée'], 404);
+        }
+
+        if ($operation->getUser() !== $user) {
+            return new JsonResponse(['error' => 'Accès refusé'], 403);
         }
 
         $em->remove($operation);

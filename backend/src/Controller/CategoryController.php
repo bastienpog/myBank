@@ -73,8 +73,12 @@ class CategoryController extends AbstractController
         $user = $this->getUser();
         $category = $repo->find($id);
 
-        if (!$category || $category->getUser() !== $user) {
+        if (!$category) {
             return new JsonResponse(['error' => 'Catégorie non trouvée'], 404);
+        }
+
+        if ($category->getUser() !== $user) {
+            return new JsonResponse(['error' => 'Accès refusé'], 403);
         }
 
         $data = json_decode($request->getContent(), true);
@@ -97,8 +101,12 @@ class CategoryController extends AbstractController
         $user = $this->getUser();
         $category = $repo->find($id);
 
-        if (!$category || $category->getUser() !== $user) {
+        if (!$category) {
             return new JsonResponse(['error' => 'Catégorie non trouvée'], 404);
+        }
+
+        if ($category->getUser() !== $user) {
+            return new JsonResponse(['error' => 'Accès refusé'], 403);
         }
 
         $em->remove($category);
