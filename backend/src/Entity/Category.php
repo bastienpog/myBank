@@ -9,9 +9,12 @@ use App\Repository\CategoryRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ApiResource(
+    normalizationContext: ['groups' => ['category:read']],
+    denormalizationContext: ['groups' => ['category:write']],
     securityPostDenormalize: "object.getUser() == user",
     operations: [
         new Patch(security: "object.getUser() == user"),
@@ -25,11 +28,13 @@ class Category
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['category:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: 'Le titre est obligatoire')]
     #[Assert\Length(min: 1, max: 255, message: 'Le titre doit faire entre 1 et 255 caractères')]
+    #[Groups(['category:read', 'category:write', 'operation:read'])]
     private ?string $title = null;
 
     #[ORM\ManyToOne(inversedBy: "categories")]
