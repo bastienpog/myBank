@@ -3,6 +3,7 @@ namespace App\DataFixtures;
 
 use App\Entity\User;
 use App\Entity\Category;
+use App\Entity\Operation;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -34,6 +35,14 @@ class AppFixtures extends Fixture
         $category2->setTitle("Food");
         $category2->setUser($user2);
         $manager->persist($category2);
+
+        $operation = new Operation();
+        $operation->setLabel("Rent");
+        $operation->setAmount("800.00");
+        $operation->setDate(new \DateTime("2026-01-01"));
+        $operation->setCategory($category);
+        $operation->setUser($user);
+        $manager->persist($operation);
 
         $manager->flush();
 

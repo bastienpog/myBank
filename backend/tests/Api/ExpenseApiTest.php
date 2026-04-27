@@ -135,16 +135,17 @@ class ExpenseApiTest extends WebTestCase
     public function testModifyOtherUserOperationReturns403(): void
     {
         $client = static::createClient();
-        $tokenUser1 = $this->getAuthToken($client, "test@mybank.com");
+
         $tokenUser2 = $this->getAuthToken($client, "test2@mybank.com");
+        $tokenUser1 = $this->getAuthToken($client, "test@mybank.com");
 
         $client->request(
             "PUT",
-            "/api/operations/2",
+            "/api/operations/1",
             [],
             [],
             [
-                "HTTP_AUTHORIZATION" => "Bearer $tokenUser1",
+                "HTTP_AUTHORIZATION" => "Bearer $tokenUser2",
                 "CONTENT_TYPE" => "application/json",
             ],
             json_encode([
