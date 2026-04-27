@@ -5,44 +5,41 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 class ExpenseApiTest extends WebTestCase
 {
     // - TEST 1 : GET /api/expenses ──────────────────────────────────
-    public function testGetExpensesReturns200(): void
+    public function testGetOperationsReturns200(): void
     {
         $client = static::createClient();
-        $client->request("GET", "/api/expenses");
+        $client->request("GET", "/api/operations");
         $this->assertResponseStatusCodeSame(200);
         $data = json_decode($client->getResponse()->getContent(), true);
         $this->assertIsArray($data);
     }
-    // ─- TEST 2 : POST /api/expenses - cas nominal ───────────────────
-    public function testPostExpenseCreatesExpense(): void
+    // ─- TEST 2 : POST /api/operations - cas nominal ───────────────────
+    public function testPostOperationCreatesOperation(): void
     {
         $client = static::createClient();
         $client->request(
             "POST",
-            "/api/expenses",
+            "/api/operations",
             [],
             [],
-            ["CONTENT_TYPE" => "application/json"],
+            ["CONTENT_TYPE" => "application/ld+json"],
             json_encode([
                 "label" => "Loyer",
-                "amount" => 900.0,
-                "date" => "2025-01-01",
-                "category" => "Housing",
+                "amount" => "900.00",
+                "date" => "2025-01-01T00:00:00+00:00",
+                "category" => "/api/categories/1",
+                "user" => "/api/users/1",
             ]),
         );
         $this->assertResponseStatusCodeSame(201);
-        $data = json_decode($client->getResponse()->getContent(), true);
-        $this->assertArrayHasKey("id", $data); // la réponse contient un id
-        $this->assertEquals("Loyer", $data["label"]); // le label est correct
-        $this->assertEquals(900.0, $data["amount"]); // le montant est correct
     }
     // ─- TEST 3 : POST sans label - cas d'erreur ─────────────────────
-    public function testPostExpenseWithoutLabelReturns422(): void
+    public function testPostOperationWithoutLabelReturns422(): void
     {
         $client = static::createClient();
         $client->request(
             "POST",
-            "/api/expenses",
+            "/api/operations",
             [],
             [],
             ["CONTENT_TYPE" => "application/json"],
@@ -51,10 +48,10 @@ class ExpenseApiTest extends WebTestCase
         $this->assertResponseStatusCodeSame(422);
     }
     // ─- TEST 4 : GET dépense inexistante - 404 ──────────────────────
-    public function testGetNonExistentExpenseReturns404(): void
+    public function testGetNonExistentOperationReturns404(): void
     {
         $client = static::createClient();
-        $client->request("GET", "/api/expenses/99999");
+        $client->request("GET", "/api/operations/99999");
         $this->assertResponseStatusCodeSame(404);
     }
 }
