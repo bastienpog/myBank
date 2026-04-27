@@ -6,6 +6,7 @@ use ApiPlatform\Metadata\ApiResource;
 use App\Repository\OperationRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ApiResource]
 #[ORM\Entity(repositoryClass: OperationRepository::class)]
@@ -17,12 +18,15 @@ class Operation
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: 'Le label est obligatoire')]
     private ?string $label = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
+    #[Assert\Positive(message: 'Le montant doit être positif')]
     private ?string $amount = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[Assert\NotNull(message: 'La date est obligatoire')]
     private ?\DateTimeInterface $date = null;
 
     #[ORM\ManyToOne(inversedBy: "operations")]

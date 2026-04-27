@@ -104,7 +104,7 @@ jobs:
           APP_SECRET: "test_secret_for_ci"
           JWT_SECRET_KEY: "%kernel.project_dir%/config/jwt/private.pem"
           JWT_PUBLIC_KEY: "%kernel.project_dir%/config/jwt/public.pem"
-          JWT_PASSPHRASE: ""
+          JWT_PASSPHRASE: "${{ secrets.JWT_PASSPHRASE }}"
 
       - name: Run PHPUnit tests
         run: php bin/phpunit

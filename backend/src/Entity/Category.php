@@ -7,9 +7,11 @@ use App\Repository\CategoryRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ApiResource]
 #[ORM\Entity(repositoryClass: CategoryRepository::class)]
+#[Assert\Unique(fields: ['title', 'user'], message: 'Cette catégorie existe déjà pour cet utilisateur')]
 class Category
 {
     #[ORM\Id]
@@ -18,6 +20,8 @@ class Category
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: 'Le titre est obligatoire')]
+    #[Assert\Length(min: 1, max: 255, message: 'Le titre doit faire entre 1 et 255 caractères')]
     private ?string $title = null;
 
     #[ORM\ManyToOne(inversedBy: "categories")]
