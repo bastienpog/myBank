@@ -24,10 +24,22 @@ class AppFixtures extends Fixture
         $category->setUser($user);
         $manager->persist($category);
 
+        $user2 = new User();
+        $user2->setEmail("test2@mybank.com");
+        $user2->setRoles(["ROLE_USER"]);
+        $user2->setPassword($this->hasher->hashPassword($user2, "password"));
+        $manager->persist($user2);
+
+        $category2 = new Category();
+        $category2->setTitle("Food");
+        $category2->setUser($user2);
+        $manager->persist($category2);
+
         $manager->flush();
 
-        // Rend les objets accessibles dans d'autres fixtures si besoin
         $this->addReference("user", $user);
         $this->addReference("category", $category);
+        $this->addReference("user2", $user2);
+        $this->addReference("category2", $category2);
     }
 }
