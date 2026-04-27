@@ -26,7 +26,8 @@ security:
         - { path: ^/api/register, roles: PUBLIC_ACCESS }
         - { path: ^/api/health, roles: PUBLIC_ACCESS }
         - { path: ^/api/docs, roles: PUBLIC_ACCESS }
-        - { path: ^/api, roles: ROLE_USER }
+        - { path: ^/api/operations, roles: ROLE_USER }
+        - { path: ^/api/categories, roles: ROLE_USER }
 
 when@test:
     security:
