@@ -3,12 +3,20 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Delete;
 use App\Repository\OperationRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
-#[ApiResource]
+#[ApiResource(
+    securityPostDenormalize: "object.getUser() == user",
+    operations: [
+        new Patch(security: "object.getUser() == user"),
+        new Delete(security: "object.getUser() == user"),
+    ]
+)]
 #[ORM\Entity(repositoryClass: OperationRepository::class)]
 class Operation
 {
