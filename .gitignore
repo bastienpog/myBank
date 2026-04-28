@@ -4,3 +4,4 @@
 /front/node_modules/
 /front/.env.local
 .env
+AGENTS.md

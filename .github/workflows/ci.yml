@@ -65,7 +65,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.4"
-          extensions: pdo, pdo_mysql, intl, mbstring, zip
+          extensions: pdo, pdo_mysql, intl, mbstring, zip, sodium # sodium ajouté pour JWT
           coverage: none
           tools: composer:v2
 
@@ -82,16 +82,29 @@ jobs:
           restore-keys: ${{ runner.os }}-composer-
 
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+        run: composer install --no-interaction --prefer-dist
+        working-directory: backend
+
+      # Génère des clés JWT temporaires pour les tests
+      - name: Generate JWT keys for tests
+        run: |
+          mkdir -p config/jwt
+          openssl genrsa -out config/jwt/private.pem 2048
+          openssl rsa -in config/jwt/private.pem -pubout -out config/jwt/public.pem
         working-directory: backend
 
       - name: Prepare database and migrations
         run: |
           php bin/console doctrine:database:create --env=test --if-not-exists
           php bin/console doctrine:migrations:migrate --env=test --no-interaction
+          php bin/console doctrine:fixtures:load --env=test --no-interaction
         working-directory: backend
         env:
           DATABASE_URL: "mysql://mybank:secret@127.0.0.1:3306/mybank_test"
+          APP_SECRET: "test_secret_for_ci"
+          JWT_SECRET_KEY: "%kernel.project_dir%/config/jwt/private.pem"
+          JWT_PUBLIC_KEY: "%kernel.project_dir%/config/jwt/public.pem"
+          JWT_PASSPHRASE: "${{ secrets.JWT_PASSPHRASE || '' }}"
 
       - name: Run PHPUnit tests
         run: php bin/phpunit
@@ -99,3 +112,7 @@ jobs:
         env:
           APP_ENV: test
           DATABASE_URL: "mysql://mybank:secret@127.0.0.1:3306/mybank_test"
+          APP_SECRET: "test_secret_for_ci"
+          JWT_SECRET_KEY: "%kernel.project_dir%/config/jwt/private.pem"
+          JWT_PUBLIC_KEY: "%kernel.project_dir%/config/jwt/public.pem"
+          JWT_PASSPHRASE: ""

@@ -1,60 +1,158 @@
 <?php
-
 namespace App\Tests\Api;
+
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+
 class ExpenseApiTest extends WebTestCase
 {
-    // - TEST 1 : GET /api/expenses ──────────────────────────────────
-    public function testGetExpensesReturns200(): void
+    private function getAuthToken(object $client, string $email = "test@mybank.com"): string
     {
-        $client = static::createClient();
-        $client->request("GET", "/api/expenses");
-        $this->assertResponseStatusCodeSame(200);
-        $data = json_decode($client->getResponse()->getContent(), true);
-        $this->assertIsArray($data);
-    }
-    // ─- TEST 2 : POST /api/expenses - cas nominal ───────────────────
-    public function testPostExpenseCreatesExpense(): void
-    {
-        $client = static::createClient();
         $client->request(
             "POST",
-            "/api/expenses",
+            "/api/login",
             [],
             [],
             ["CONTENT_TYPE" => "application/json"],
             json_encode([
-                "label" => "Loyer",
-                "amount" => 900.0,
-                "date" => "2025-01-01",
-                "category" => "Housing",
+                "username" => $email,
+                "password" => "password",
             ]),
         );
-        $this->assertResponseStatusCodeSame(201);
+
         $data = json_decode($client->getResponse()->getContent(), true);
-        $this->assertArrayHasKey("id", $data); // la réponse contient un id
-        $this->assertEquals("Loyer", $data["label"]); // le label est correct
-        $this->assertEquals(900.0, $data["amount"]); // le montant est correct
+        return $data["token"];
     }
-    // ─- TEST 3 : POST sans label - cas d'erreur ─────────────────────
-    public function testPostExpenseWithoutLabelReturns422(): void
+
+    public function testGetOperationsReturns200(): void
     {
         $client = static::createClient();
+        $token = $this->getAuthToken($client);
+
+        $client->request(
+            "GET",
+            "/api/operations",
+            [],
+            [],
+            [
+                "HTTP_AUTHORIZATION" => "Bearer $token",
+            ],
+        );
+
+        $this->assertResponseStatusCodeSame(200);
+    }
+
+    public function testGetNonExistentOperationReturns404(): void
+    {
+        $client = static::createClient();
+        $token = $this->getAuthToken($client);
+
+        $client->request(
+            "GET",
+            "/api/operations/99999",
+            [],
+            [],
+            [
+                "HTTP_AUTHORIZATION" => "Bearer $token",
+            ],
+        );
+
+        $this->assertResponseStatusCodeSame(404);
+    }
+
+    public function testAccessWithoutTokenReturns401(): void
+    {
+        $client = static::createClient();
+        $client->request("GET", "/api/operations");
+        $this->assertResponseStatusCodeSame(401);
+    }
+
+    public function testPostOperationCreates201(): void
+    {
+        $client = static::createClient();
+        $token = $this->getAuthToken($client);
+
         $client->request(
             "POST",
-            "/api/expenses",
+            "/api/operations",
+            [],
+            [],
+            [
+                "HTTP_AUTHORIZATION" => "Bearer $token",
+                "CONTENT_TYPE" => "application/json",
+            ],
+            json_encode([
+                "label" => "Test purchase",
+                "amount" => "50.00",
+                "date" => "2026-01-15",
+                "category" => 1,
+            ]),
+        );
+
+        $this->assertResponseStatusCodeSame(201);
+    }
+
+    public function testPostOperationWithoutRequiredFieldReturns422(): void
+    {
+        $client = static::createClient();
+        $token = $this->getAuthToken($client);
+
+        $client->request(
+            "POST",
+            "/api/operations",
+            [],
+            [],
+            [
+                "HTTP_AUTHORIZATION" => "Bearer $token",
+                "CONTENT_TYPE" => "application/json",
+            ],
+            json_encode([
+                "label" => "",
+            ]),
+        );
+
+        $this->assertResponseStatusCodeSame(422);
+    }
+
+    public function testPostRegisterReturns201(): void
+    {
+        $client = static::createClient();
+
+        $client->request(
+            "POST",
+            "/api/register",
             [],
             [],
             ["CONTENT_TYPE" => "application/json"],
-            json_encode(["amount" => 50.0, "date" => "2025-01-01"]),
+            json_encode([
+                "email" => "newuser" . uniqid() . "@test.com",
+                "password" => "password123",
+            ]),
         );
-        $this->assertResponseStatusCodeSame(422);
+
+        $this->assertResponseStatusCodeSame(201);
     }
-    // ─- TEST 4 : GET dépense inexistante - 404 ──────────────────────
-    public function testGetNonExistentExpenseReturns404(): void
+
+    public function testModifyOtherUserOperationReturns403(): void
     {
         $client = static::createClient();
-        $client->request("GET", "/api/expenses/99999");
-        $this->assertResponseStatusCodeSame(404);
+
+        $tokenUser2 = $this->getAuthToken($client, "test2@mybank.com");
+        $tokenUser1 = $this->getAuthToken($client, "test@mybank.com");
+
+        $client->request(
+            "PUT",
+            "/api/operations/1",
+            [],
+            [],
+            [
+                "HTTP_AUTHORIZATION" => "Bearer $tokenUser2",
+                "CONTENT_TYPE" => "application/json",
+            ],
+            json_encode([
+                "label" => "Hacked!",
+            ]),
+        );
+
+        $this->assertResponseStatusCodeSame(403);
     }
 }

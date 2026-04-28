@@ -5,6 +5,8 @@ namespace App\Entity;
 use App\Repository\OperationRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: OperationRepository::class)]
 class Operation
@@ -12,19 +14,27 @@ class Operation
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['operation:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: 'Le label est obligatoire')]
+    #[Groups(['operation:read', 'operation:write'])]
     private ?string $label = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
+    #[Assert\Positive(message: 'Le montant doit être positif')]
+    #[Groups(['operation:read', 'operation:write'])]
     private ?string $amount = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[Assert\NotNull(message: 'La date est obligatoire')]
+    #[Groups(['operation:read', 'operation:write'])]
     private ?\DateTimeInterface $date = null;
 
     #[ORM\ManyToOne(inversedBy: "operations")]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['operation:read', 'operation:write'])]
     private ?Category $category = null;
 
     #[ORM\ManyToOne(inversedBy: "operations")]
