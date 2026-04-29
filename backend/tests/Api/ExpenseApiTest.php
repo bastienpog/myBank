@@ -9,17 +9,23 @@ class ExpenseApiTest extends WebTestCase
     {
         $client->request(
             "POST",
-            "/api/login",
+            "/api/auth/login",
             [],
             [],
             ["CONTENT_TYPE" => "application/json"],
             json_encode([
-                "username" => $email,
+                "email" => $email,
                 "password" => "password",
             ]),
         );
 
-        $data = json_decode($client->getResponse()->getContent(), true);
+        $response = $client->getResponse();
+        $data = json_decode($response->getContent(), true);
+        
+        if (!isset($data["token"])) {
+            throw new \RuntimeException("Login failed: " . $response->getContent());
+        }
+        
         return $data["token"];
     }
 
@@ -119,7 +125,7 @@ class ExpenseApiTest extends WebTestCase
 
         $client->request(
             "POST",
-            "/api/register",
+            "/api/auth/register",
             [],
             [],
             ["CONTENT_TYPE" => "application/json"],

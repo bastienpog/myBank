@@ -3,6 +3,7 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Repository\UserRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -10,14 +11,21 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-class RegisterController extends AbstractController
+class AuthController extends AbstractController
 {
-    #[Route('/api/register', name: 'api_register', methods: ['POST'])]
+    #[Route('/api/auth/login', name: 'api_login', methods: ['POST'])]
+    public function login(): JsonResponse
+    {
+        throw new \LogicException('This should never be reached.');
+    }
+
+    #[Route('/api/auth/register', name: 'api_register', methods: ['POST'])]
     public function register(
         Request $request,
         UserPasswordHasherInterface $hasher,
         UserRepository $userRepository,
         ValidatorInterface $validator,
+        EntityManagerInterface $em,
     ): JsonResponse {
         $data = json_decode($request->getContent(), true);
 
@@ -53,14 +61,58 @@ class RegisterController extends AbstractController
             return new JsonResponse(['error' => implode(', ', $messages)], 400);
         }
 
-        $em = $this->getDoctrine()->getManager();
         $em->persist($user);
         $em->flush();
 
         return new JsonResponse([
+            'user' => [
+                'id' => $user->getId(),
+                'email' => $user->getEmail(),
+            ],
+        ], 201);
+    }
+
+    #[Route('/api/auth/me', name: 'api_me', methods: ['GET'])]
+    public function me(): JsonResponse
+    {
+        $user = $this->getUser();
+
+        return new JsonResponse([
             'id' => $user->getId(),
             'email' => $user->getEmail(),
-            'roles' => $user->getRoles(),
-        ], 201);
+        ]);
+    }
+
+    #[Route('/api/auth/change-password', name: 'api_change_password', methods: ['POST'])]
+    public function changePassword(
+        Request $request,
+        UserPasswordHasherInterface $hasher,
+        EntityManagerInterface $em,
+    ): JsonResponse {
+        $user = $this->getUser();
+        $data = json_decode($request->getContent(), true);
+
+        if (!isset($data['currentPassword']) || !isset($data['newPassword'])) {
+            return new JsonResponse([
+                'error' => 'Les champs currentPassword et newPassword sont obligatoires',
+            ], 400);
+        }
+
+        if (!$hasher->isPasswordValid($user, $data['currentPassword'])) {
+            return new JsonResponse([
+                'error' => 'Mot de passe actuel incorrect',
+            ], 400);
+        }
+
+        if (strlen($data['newPassword']) < 6) {
+            return new JsonResponse([
+                'error' => 'Le nouveau mot de passe doit faire au moins 6 caractères',
+            ], 400);
+        }
+
+        $user->setPassword($hasher->hashPassword($user, $data['newPassword']));
+        $em->flush();
+
+        return new JsonResponse(['message' => 'Mot de passe mis à jour']);
     }
 }
