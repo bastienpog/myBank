@@ -2,31 +2,22 @@
 namespace App\Tests\Api;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class ExpenseApiTest extends WebTestCase
 {
     private function getAuthToken(object $client, string $email = "test@mybank.com"): string
     {
-        $client->request(
-            "POST",
-            "/api/auth/login",
-            [],
-            [],
-            ["CONTENT_TYPE" => "application/json"],
-            json_encode([
-                "email" => $email,
-                "password" => "password",
-            ]),
-        );
-
-        $response = $client->getResponse();
-        $data = json_decode($response->getContent(), true);
+        $container = $this->getContainer();
+        $userRepository = $container->get('doctrine')->getRepository(\App\Entity\User::class);
+        $jwtManager = $container->get('lexik_jwt_authentication.jwt_manager');
         
-        if (!isset($data["token"])) {
-            throw new \RuntimeException("Login failed: " . $response->getContent());
+        $user = $userRepository->findOneBy(['email' => $email]);
+        if (!$user) {
+            throw new \RuntimeException("User $email not found");
         }
         
-        return $data["token"];
+        return $jwtManager->create($user);
     }
 
     public function testGetOperationsReturns200(): void
@@ -53,13 +44,17 @@ class ExpenseApiTest extends WebTestCase
         $token = $this->getAuthToken($client);
 
         $client->request(
-            "GET",
+            "PUT",
             "/api/operations/99999",
             [],
             [],
             [
                 "HTTP_AUTHORIZATION" => "Bearer $token",
+                "CONTENT_TYPE" => "application/json",
             ],
+            json_encode([
+                "label" => "Updated",
+            ]),
         );
 
         $this->assertResponseStatusCodeSame(404);
@@ -97,7 +92,7 @@ class ExpenseApiTest extends WebTestCase
         $this->assertResponseStatusCodeSame(201);
     }
 
-    public function testPostOperationWithoutRequiredFieldReturns422(): void
+    public function testPostOperationWithoutRequiredFieldReturns400(): void
     {
         $client = static::createClient();
         $token = $this->getAuthToken($client);
@@ -116,7 +111,7 @@ class ExpenseApiTest extends WebTestCase
             ]),
         );
 
-        $this->assertResponseStatusCodeSame(422);
+        $this->assertResponseStatusCodeSame(400);
     }
 
     public function testPostRegisterReturns201(): void

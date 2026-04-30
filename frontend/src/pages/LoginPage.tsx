@@ -1,28 +1,32 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import AuthLayout from "../components/AuthLayout";
+import { useLogin } from "../hooks/useAuth";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const loginMutation = useLogin();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Login:", { email, password });
+    loginMutation.mutate({ email, password });
   };
 
   return (
     <AuthLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--color-brand-dark-deep)]">
-            Welcome
-          </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Sign in to your account
-          </p>
+          <h1 className="text-2xl font-bold text-brand-dark-deep">Welcome</h1>
+          <p className="mt-1 text-sm text-gray-500">Sign in to your account</p>
         </div>
+
+        {loginMutation.isError && (
+          <div className="alert alert-error text-sm">
+            {(loginMutation.error as Error).message || "Login failed"}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -59,17 +63,17 @@ export default function LoginPage() {
           </div>
 
           <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" className="checkbox checkbox-sm" />
-              Remember me
-            </label>
-            <a href="#" className="text-sm text-[var(--color-brand-dark)] hover:underline">
+            <a href="#" className="text-sm text-brand-dark hover:underline">
               Forgot password?
             </a>
           </div>
 
-          <button type="submit" className="btn btn-primary w-full">
-            Sign In
+          <button
+            type="submit"
+            className="btn btn-primary w-full"
+            disabled={loginMutation.isPending}
+          >
+            {loginMutation.isPending ? "Signing in..." : "Sign In"}
           </button>
         </form>
 
@@ -77,7 +81,7 @@ export default function LoginPage() {
           Don't have an account?{" "}
           <Link
             to="/register"
-            className="text-[var(--color-brand-green)] hover:underline font-medium"
+            className="text-brand-green hover:underline font-medium"
           >
             Sign up
           </Link>
